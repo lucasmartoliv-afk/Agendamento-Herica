@@ -1,10 +1,11 @@
 
-import React, { useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from '../types';
 
 interface WelcomeProps {
     user: User;
     onStartBooking: () => void;
+    onViewAppointments: () => void;
 }
 
 const motivationalQuotes = [
@@ -15,10 +16,12 @@ const motivationalQuotes = [
     "Invista em você. A vida fica mais bonita quando você se ama."
 ];
 
-export const Welcome: React.FC<WelcomeProps> = ({ user, onStartBooking }) => {
-    const quote = useMemo(() => {
+export const Welcome: React.FC<WelcomeProps> = ({ user, onStartBooking, onViewAppointments }) => {
+    const [quote, setQuote] = useState('');
+
+    useEffect(() => {
         const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
-        return motivationalQuotes[randomIndex];
+        setQuote(motivationalQuotes[randomIndex]);
     }, []);
     
     const firstName = user.name.split(' ')[0];
@@ -28,16 +31,26 @@ export const Welcome: React.FC<WelcomeProps> = ({ user, onStartBooking }) => {
             <h2 className="text-3xl font-bold text-gray-800">Olá, <span className="text-pink-500">{firstName}</span>!</h2>
             <p className="text-gray-600 mt-2 text-lg">É um prazer ter você aqui no Studio Hérica Bitencurth.</p>
 
-            <div className="my-8 p-4 bg-pink-50 border-l-4 border-pink-400">
-                <p className="text-gray-700 italic">"{quote}"</p>
-            </div>
+            {quote && (
+                <div className="my-8 p-4 bg-pink-50 border-l-4 border-pink-400">
+                    <p className="text-gray-700 italic">"{quote}"</p>
+                </div>
+            )}
             
-            <button 
-                onClick={onStartBooking}
-                className="w-full bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
-            >
-                Fazer Novo Agendamento
-            </button>
+            <div className="space-y-3">
+                <button 
+                    onClick={onStartBooking}
+                    className="w-full bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+                >
+                    Fazer Novo Agendamento
+                </button>
+                 <button 
+                    onClick={onViewAppointments}
+                    className="w-full bg-pink-100 text-pink-800 font-bold py-3 px-6 rounded-lg transition-all duration-300 hover:bg-pink-200"
+                >
+                    Meus Agendamentos
+                </button>
+            </div>
         </div>
     );
 };

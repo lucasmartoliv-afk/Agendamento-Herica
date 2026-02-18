@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { Service } from '../types';
-import { SERVICES } from '../constants';
+import { getServices } from '../utils/serviceUtils';
 
 interface ServiceSelectorProps {
   selectedServices: Service[];
@@ -25,9 +25,13 @@ const ServiceCard: React.FC<{ service: Service; onSelect: () => void; isSelected
                 isDisabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : 'cursor-pointer hover:shadow-lg hover:scale-105'
             }`}
         >
-            <div className="flex-shrink-0 w-12 h-12 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center">
-            {service.icon}
-            </div>
+            {service.photo ? (
+                <img src={service.photo} alt={service.name} className="flex-shrink-0 w-12 h-12 rounded-full object-cover" />
+            ) : (
+                <div className="flex-shrink-0 w-12 h-12 bg-pink-100 text-pink-500 rounded-full flex items-center justify-center">
+                    {service.icon}
+                </div>
+            )}
             <div className="flex-grow">
             <h3 className="font-semibold text-gray-800">{service.name}</h3>
             <p className="text-sm text-gray-500">{service.description}</p>
@@ -44,17 +48,24 @@ const ServiceCard: React.FC<{ service: Service; onSelect: () => void; isSelected
 };
 
 export const ServiceSelector: React.FC<ServiceSelectorProps> = ({ selectedServices, onToggleService, onNext }) => {
+  const allServices = useMemo(() => getServices(), []);
+  
   const serviceCategories = useMemo(() => {
-    return SERVICES.reduce((acc, service) => {
+    return allServices.reduce((acc, service) => {
       (acc[service.category] = acc[service.category] || []).push(service);
       return acc;
     }, {} as Record<string, Service[]>);
-  }, []);
+  }, [allServices]);
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(Object.keys(serviceCategories)[0]);
 
   const totalPrice = useMemo(() => selectedServices.reduce((acc, s) => acc + s.price, 0), [selectedServices]);
-  const totalDuration = useMemo(() => selectedServices.reduce((acc, s) => acc + s.duration, 0), [selectedServices]);
+  const totalDuration = useMemo(() => {
+    if (selectedServices.length === 0) return 0;
+    const baseDuration = selectedServices.reduce((total, service) => total + service.duration, 0);
+    const buffer = selectedServices.length * 10;
+    return baseDuration + buffer;
+  }, [selectedServices]);
 
   const hasExtensionSelected = useMemo(() => selectedServices.some(s => s.category === 'Extensão de Cílios'), [selectedServices]);
   const hasMaintenanceSelected = useMemo(() => selectedServices.some(s => s.category === 'Manutenção de Cílios'), [selectedServices]);
@@ -109,6 +120,9 @@ export const ServiceSelector: React.FC<ServiceSelectorProps> = ({ selectedServic
                             <span className="text-pink-600">R${totalPrice.toFixed(2)}</span>
                         </div>
                     </div>
+                    <p className="text-xs text-gray-500 text-right mt-1">
+                        *Tempo inclui 10 min de tolerância por serviço.
+                    </p>
                      <button 
                         onClick={onNext}
                         className="mt-4 w-full bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"

@@ -10,11 +10,14 @@ import { Success } from './components/Success';
 import { Auth } from './components/Auth';
 import { Welcome } from './components/Welcome';
 import { BirthdayWish } from './components/BirthdayWish';
+import { AdminPanel } from './components/AdminPanel';
+import { AdminLogin } from './components/AdminLogin';
 import { getBookedSlots, saveBookedSlot } from './utils/bookingUtils';
 import { getUser, saveUser } from './utils/userUtils';
-import { SERVICES } from './constants';
+import { seedInitialData } from './utils/seed';
+import { MyAppointments } from './components/MyAppointments';
 
-type AppState = 'AUTH' | 'WELCOME' | 'BIRTHDAY' | 'BOOKING';
+type AppState = 'AUTH' | 'WELCOME' | 'BIRTHDAY' | 'BOOKING' | 'ADMIN' | 'MY_APPOINTMENTS';
 type BookingStep = 'SERVICE' | 'DATETIME' | 'CONFIRMATION' | 'SUCCESS';
 
 const App: React.FC = () => {
@@ -26,8 +29,10 @@ const App: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [bookedSlots, setBookedSlots] = useState<BookedSlot[]>([]);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
 
   useEffect(() => {
+    seedInitialData(); // Populates with mock data if it's the first run
     const existingUser = getUser();
     if (existingUser) {
       setUser(existingUser);
@@ -37,7 +42,11 @@ const App: React.FC = () => {
   }, []);
 
   const totalDuration = useMemo(() => {
-    return selectedServices.reduce((total, service) => total + service.duration, 0);
+    if (selectedServices.length === 0) return 0;
+    const baseDuration = selectedServices.reduce((total, service) => total + service.duration, 0);
+    // Adds a 10-minute buffer for each selected service
+    const buffer = selectedServices.length * 10;
+    return baseDuration + buffer;
   }, [selectedServices]);
 
   const handleRegister = (newUser: User) => {
@@ -49,15 +58,27 @@ const App: React.FC = () => {
   const handleStartBooking = () => {
     if (!user) return;
     const today = new Date();
-    // The birthDate is YYYY-MM-DD. Splitting is safe from timezone issues.
     const birthDateParts = user.birthDate.split('-');
-    const birthMonth = parseInt(birthDateParts[1], 10) - 1; // JS months are 0-11
+    const birthMonth = parseInt(birthDateParts[1], 10) - 1;
 
     if (today.getMonth() === birthMonth) {
       setAppState('BIRTHDAY');
     } else {
       setAppState('BOOKING');
     }
+  };
+  
+  const handleViewAppointments = () => {
+    setAppState('MY_APPOINTMENTS');
+  };
+
+  const handleGoToAdmin = () => {
+    setShowAdminLogin(true);
+  }
+
+  const handleAdminLoginSuccess = () => {
+    setAppState('ADMIN');
+    setShowAdminLogin(false);
   };
 
   const handleContinueFromBirthday = () => {
@@ -70,12 +91,10 @@ const App: React.FC = () => {
         if (isSelected) {
             return prev.filter(s => s.id !== service.id);
         } else {
-            // This logic allows selecting multiple services from different categories
             const isDifferentCategory = !prev.some(s => s.category === service.category);
             if (isDifferentCategory) {
                  return [...prev, service];
             } else {
-                // If it's the same category, replace the existing one
                 const otherServices = prev.filter(s => s.category !== service.category);
                 return [...otherServices, service];
             }
@@ -97,17 +116,20 @@ const App: React.FC = () => {
   }, []);
   
   const handleBookingConfirmed = useCallback(() => {
-    if (selectedDate && selectedTime) {
+    if (selectedDate && selectedTime && user) {
         const newBooking: BookedSlot = {
             date: selectedDate.toISOString().split('T')[0],
             time: selectedTime,
             duration: totalDuration,
+            userName: user.name,
+            userPhone: user.phone,
+            services: selectedServices,
         };
         saveBookedSlot(newBooking);
         setBookedSlots(prev => [...prev, newBooking]);
         setBookingStep('SUCCESS');
     }
-  }, [selectedDate, selectedTime, totalDuration]);
+  }, [selectedDate, selectedTime, totalDuration, user, selectedServices]);
 
   const handleBack = useCallback(() => {
     if (bookingStep === 'DATETIME') {
@@ -126,7 +148,7 @@ const App: React.FC = () => {
   }, []);
 
   const renderBookingStep = () => {
-    if (!user) return null; // Should not happen in this state
+    if (!user) return null;
 
     switch (bookingStep) {
       case 'SERVICE':
@@ -179,14 +201,32 @@ const App: React.FC = () => {
             return <Auth onRegister={handleRegister} />;
         case 'WELCOME':
             if (user) {
-                return <Welcome user={user} onStartBooking={handleStartBooking} />;
+                return <Welcome user={user} onStartBooking={handleStartBooking} onViewAppointments={handleViewAppointments} />;
             }
-            return <Auth onRegister={handleRegister} />; // Fallback
+            return <Auth onRegister={handleRegister} />;
+        case 'MY_APPOINTMENTS':
+             if (user) {
+                return <MyAppointments 
+                    user={user} 
+                    onBack={() => setAppState('WELCOME')} 
+                    onNewBooking={handleStartBooking}
+                />;
+            }
+            return <Auth onRegister={handleRegister} />;
         case 'BIRTHDAY':
              if (user) {
                 return <BirthdayWish user={user} onContinue={handleContinueFromBirthday} />;
             }
-            return <Auth onRegister={handleRegister} />; // Fallback
+            return <Auth onRegister={handleRegister} />;
+        case 'ADMIN':
+            return <AdminPanel onBack={() => {
+                const existingUser = getUser();
+                if (existingUser) {
+                    setAppState('WELCOME');
+                } else {
+                    setAppState('AUTH');
+                }
+            }} />;
         case 'BOOKING':
             return (
                 <>
@@ -201,10 +241,16 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-pink-50 to-purple-100 font-sans flex flex-col items-center p-4">
-      <Header />
-      <main className="w-full max-w-2xl mx-auto mt-8">
+      <Header onGoToAdmin={handleGoToAdmin} />
+      <main className="w-full max-w-4xl mx-auto mt-8">
         {renderContent()}
       </main>
+      {showAdminLogin && (
+        <AdminLogin 
+            onClose={() => setShowAdminLogin(false)} 
+            onSuccess={handleAdminLoginSuccess} 
+        />
+      )}
     </div>
   );
 };

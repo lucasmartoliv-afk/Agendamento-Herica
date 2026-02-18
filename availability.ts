@@ -1,36 +1,58 @@
 
-// In a real application, this data would come from a database or an API
-// managed by an admin panel where Hérica could set her availability.
+import { getAvailabilitySettings } from './utils/availabilityUtils';
+import { parseTime } from './utils/bookingUtils';
 
-// This function generates a schedule for the next 60 days.
+// This function dynamically generates a schedule for the next 60 days
+// based on the settings saved by the admin, including exceptions.
 const generateAvailability = (): Record<string, string[]> => {
     const availableSlots: Record<string, string[]> = {};
+    const settings = getAvailabilitySettings();
     const today = new Date();
-    
-    // Operating hours
-    const workHours = [
-        '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-        // Lunch break from 12:00 to 13:00
-        '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00'
-    ];
+
+    const regularStartTime = parseTime(settings.startTime);
+    const regularEndTime = parseTime(settings.endTime);
     
     // Generate for the next 60 days
     for (let i = 0; i < 60; i++) {
         const date = new Date(today);
         date.setDate(today.getDate() + i);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
         
-        const dayOfWeek = date.getDay();
-        
-        // 0 = Sunday, 6 = Saturday. Let's say she doesn't work on Sundays.
-        if (dayOfWeek === 0) {
+        const exception = settings.exceptions.find(ex => ex.date === dateKey);
+
+        let startTimeInMinutes = regularStartTime;
+        let endTimeInMinutes = regularEndTime;
+        let isWorkDay = settings.workDays.includes(date.getDay());
+
+        if (exception) {
+            isWorkDay = exception.isWorking;
+            if (isWorkDay) {
+                startTimeInMinutes = parseTime(exception.startTime);
+                endTimeInMinutes = parseTime(exception.endTime);
+            }
+        }
+
+        if (!isWorkDay) {
             continue;
         }
 
-        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
-        availableSlots[dateKey] = workHours;
+        const daySlots: string[] = [];
+
+        // Generate 30-minute slots from start to end time
+        for (let minutes = startTimeInMinutes; minutes < endTimeInMinutes; minutes += 30) {
+            const hours = Math.floor(minutes / 60);
+            const mins = minutes % 60;
+            const timeString = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+            daySlots.push(timeString);
+        }
+        
+        if (daySlots.length > 0) {
+            availableSlots[dateKey] = daySlots;
+        }
     }
 
     return availableSlots;
 }
 
-export const AVAILABLE_SLOTS = generateAvailability();
+// AVAILABLE_SLOTS is now a function that gets called to generate slots on the fly
+export const getAvailableSlots = () => generateAvailability();

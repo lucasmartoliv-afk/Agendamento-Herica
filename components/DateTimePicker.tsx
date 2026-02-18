@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { ChevronLeftIcon, ChevronRightIcon } from './icons';
-import { AVAILABLE_SLOTS } from '../availability';
+import { getAvailableSlots } from '../availability';
 import { BookedSlot } from '../types';
 import { parseTime } from '../utils/bookingUtils';
 
@@ -63,6 +63,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ onDateTimeSelect
   const [currentDate, setCurrentDate] = useState(preselectedDate || new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(preselectedDate || null);
   const [selectedTime, setSelectedTime] = useState<string | null>(preselectedTime || null);
+  
+  // Generate available slots dynamically
+  const AVAILABLE_SLOTS = useMemo(() => getAvailableSlots(), [currentDate.getMonth()]);
 
   useEffect(() => {
     if (preselectedDate) {
@@ -78,8 +81,11 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ onDateTimeSelect
   }, [preselectedTime]);
 
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, []);
 
   const timeSlots = useMemo(() => {
     if (!selectedDate) return [];
@@ -97,7 +103,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ onDateTimeSelect
     return allDaySlots.filter(slot => 
       isSlotAvailable(slot, serviceDuration, allDaySlots, bookedForDay)
     );
-  }, [selectedDate, serviceDuration, bookedSlots]);
+  }, [selectedDate, serviceDuration, bookedSlots, AVAILABLE_SLOTS]);
 
   const daysInMonth = useMemo(() => {
     const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -143,7 +149,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({ onDateTimeSelect
     if (day < today) return false;
     const dateKey = day.toISOString().split('T')[0];
     return AVAILABLE_SLOTS[dateKey] && AVAILABLE_SLOTS[dateKey].length > 0;
-  }, [today]);
+  }, [today, AVAILABLE_SLOTS]);
 
   const isDateSelected = useCallback((day: Date) => {
     return selectedDate?.toDateString() === day.toDateString();
