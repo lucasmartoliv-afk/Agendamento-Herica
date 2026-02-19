@@ -1,35 +1,29 @@
-
 import React, { useState } from 'react';
 import { LockClosedIcon } from './icons';
+import { getAdminPassword } from '../utils/adminUtils';
 
 interface AdminLoginProps {
     onClose: () => void;
     onSuccess: () => void;
 }
 
-// Para garantir que não haja problemas, a senha foi alterada.
-const ADMIN_PASSWORD = 'senha123';
-
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onClose, onSuccess }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
     const handleLoginAttempt = () => {
-        // Garante que a comparação seja insensível a maiúsculas/minúsculas e sem espaços.
-        const enteredPassword = password.trim().toLowerCase();
+        const enteredPassword = password.trim();
+        const correctPassword = getAdminPassword();
 
-        if (enteredPassword === ADMIN_PASSWORD) {
-            // Sucesso: Fecha o modal e mostra o painel.
+        if (enteredPassword === correctPassword) {
             onSuccess();
         } else {
-            // Erro: Mostra a mensagem e limpa o campo para uma nova tentativa.
             setError('Senha incorreta. Tente novamente.');
             setPassword('');
         }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
-        // Previne o recarregamento da página ao enviar o formulário.
         e.preventDefault();
         handleLoginAttempt();
     };

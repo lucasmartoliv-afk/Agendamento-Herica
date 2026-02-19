@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { getBookedSlots } from '../utils/bookingUtils';
 import { BookedSlot, AvailabilitySettings, ScheduleException, Service, User } from '../types';
@@ -8,8 +7,9 @@ import { getAvailabilitySettings, saveAvailabilitySettings } from '../utils/avai
 import { getServices } from '../utils/serviceUtils';
 import { ServiceManager } from './ServiceManager';
 import { getUser } from '../utils/userUtils';
+import { PasswordManager } from './PasswordManager';
 
-type AdminTab = 'dashboard' | 'agenda' | 'reports' | 'availability' | 'services';
+type AdminTab = 'dashboard' | 'agenda' | 'reports' | 'availability' | 'services' | 'security';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -630,6 +630,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             case 'reports': return renderReports();
             case 'availability': return <AvailabilityManager />;
             case 'services': return <ServiceManager />;
+            case 'security': return <PasswordManager />;
             default: return null;
         }
     }
@@ -658,6 +659,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'reports' ? 'border-b-2 border-pink-500 text-pink-600' : 'text-gray-500'}`}>Relatórios</button>
                 <button onClick={() => setActiveTab('availability')} className={`px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'availability' ? 'border-b-2 border-pink-500 text-pink-600' : 'text-gray-500'}`}>Disponibilidade</button>
                 <button onClick={() => setActiveTab('services')} className={`px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'services' ? 'border-b-2 border-pink-500 text-pink-600' : 'text-gray-500'}`}>Gestão de Serviços</button>
+                <button onClick={() => setActiveTab('security')} className={`px-4 py-2 text-sm font-semibold transition-colors ${activeTab === 'security' ? 'border-b-2 border-pink-500 text-pink-600' : 'text-gray-500'}`}>Segurança</button>
             </div>
             
             {renderContent()}

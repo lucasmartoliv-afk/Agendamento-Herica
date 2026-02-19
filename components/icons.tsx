@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 export const EyeIcon = () => (
@@ -103,5 +102,11 @@ export const CurrencyDollarIcon = () => (
     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M12 6v-1.646a4.002 4.002 0 00-4-3.646" />
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.354a4 4 0 010 7.292" />
+    </svg>
+);
+
+export const ShieldCheckIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 20.944A12.02 12.02 0 0012 24a12.02 12.02 0 009-3.056c.31-.52.54-1.068.707-1.644a11.955 11.955 0 01.618-3.042 11.955 11.955 0 01-.618-3.042z" />
     </svg>
 );
